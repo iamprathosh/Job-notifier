@@ -32,6 +32,7 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions-bot@github.com"
+          git pull # Fetch the latest changes from the remote repository
           git add processed_jobs.json
           # Check if there are changes to commit
           git diff --staged --quiet || git commit -m "Update processed jobs list"
