@@ -53,27 +53,43 @@ def analyze_with_gemini(job_details, api_key):
         print(f"Error calling Gemini API: {e}")
         return False
 
-def send_ntfy_notification(job, ntfy_topic):
+def send_ntfy_notification(job, ntfy_topic, is_no_job_notification=False):
     """Sends a push notification using ntfy.sh."""
+    
+    if is_no_job_notification:
+        # Prepare a special notification for when no new jobs are found
+        notification_title = job['title']
+        notification_body = "No new relevant fresher jobs found in the last run."
+        notification_tags = "search,x"
+    else:
+        # Prepare the standard notification for a found job
+        notification_title = "New Fresher Job Found!"
+        notification_body = job['title'].encode('utf-8')
+        notification_tags = "briefcase"
+
     try:
         requests.post(
             f"https://ntfy.sh/{ntfy_topic}",
-            data=job['title'].encode('utf-8'),
+            data=notification_body,
             headers={
-                "Title": "New Fresher Job Found!",
+                "Title": notification_title,
                 "Click": job['link'],
-                "Tags": "briefcase"
+                "Tags": notification_tags
             },
             timeout=20
         )
-        print(f"Successfully sent notification for: {job['title']}")
+        print(f"Successfully sent notification: {notification_title}")
     except requests.exceptions.RequestException as e:
         print(f"Error sending ntfy notification: {e}")
+
 
 def main():
     # --- Get secrets from GitHub Actions environment ---
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
     NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
+    # The GITHUB_REPOSITORY variable is automatically provided by GitHub Actions
+    GITHUB_REPOSITORY_URL = f"https://github.com/{os.environ.get('GITHUB_REPOSITORY', '')}"
+
 
     if not GEMINI_API_KEY or not NTFY_TOPIC:
         print("Error: Missing GEMINI_API_KEY or NTFY_TOPIC environment variables.")
@@ -102,9 +118,9 @@ def main():
 
     if not links:
         print("No new job links found on Google search.")
-        return
+    else:
+        print(f"Found {len(links)} new, unprocessed links to check.")
 
-    print(f"Found {len(links)} new, unprocessed links to check.")
     new_jobs_found = []
 
     # --- Process each new link ---
@@ -129,13 +145,20 @@ def main():
         except Exception as e:
             print(f"Could not process link {link}. Error: {e}")
 
-    # --- Update the processed jobs file ---
+    # --- Final Step: Update processed jobs file OR send a "no jobs found" notification ---
     if new_jobs_found:
         updated_processed_jobs = processed_jobs + new_jobs_found
         save_processed_jobs(updated_processed_jobs)
         print(f"Finished. Added {len(new_jobs_found)} new jobs to processed list.")
     else:
-        print("Finished. No new relevant jobs were found in this run.")
+        print("No new relevant jobs were found in this run. Sending a status notification.")
+        # Create a dummy job object for the notification function
+        status_update = {
+            'title': 'Job Search Complete',
+            'link': f"{GITHUB_REPOSITORY_URL}/actions" # Link to the actions page
+        }
+        send_ntfy_notification(status_update, NTFY_TOPIC, is_no_job_notification=True)
+
 
 if __name__ == "__main__":
     main()
