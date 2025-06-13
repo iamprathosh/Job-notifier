@@ -11,8 +11,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # Fetches all history for all branches and tags, which is needed for the pull/push step
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -30,12 +28,8 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python scraper.py
 
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions-bot@github.com"
-          git pull # Fetch the latest changes from the remote repository
-          git add processed_jobs.json
-          # Check if there are changes to commit
-          git diff --staged --quiet || git commit -m "Update processed jobs list"
-          git push
+      - name: Commit processed jobs file
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update processed jobs list"
+          file_pattern: processed_jobs.json
