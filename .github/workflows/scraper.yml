@@ -8,7 +8,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # Give the default GITHUB_TOKEN write permission to commit and push changes.
+    # This permission block is crucial for allowing the action to push code.
     permissions:
       contents: write
       
@@ -32,11 +32,13 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python scraper.py
 
-      - name: Commit processed jobs file
-        uses: EndBug/add-and-commit@v9
-        with:
-          # The message for the commit
-          message: 'Update processed jobs list'
-          # The user name and email for the commit
-          author_name: GitHub Actions Bot
-          author_email: actions-bot@github.com
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions-bot@github.com"
+          git add processed_jobs.json
+          # Check if there are changes to commit
+          git diff --staged --quiet || git commit -m "Update processed jobs list"
+          # Pull latest changes before pushing
+          git pull --rebase
+          git push
