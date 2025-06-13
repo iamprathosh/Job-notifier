@@ -100,7 +100,8 @@ def main():
     print(f"Loaded {len(processed_jobs)} previously processed jobs.")
     
     search_query = '"walk-in interview" AND ("fresher" OR "2025 batch") AND "developer" in Bangalore'
-    google_url = f"https://www.google.com/search?q={search_query}&tbs=qdr:d"
+    # The Google search parameter 'tbs=qdr:w' searches for results from the past week.
+    google_url = f"https://www.google.com/search?q={search_query}&tbs=qdr:w"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
     
     print(f"Searching Google: {google_url}")
